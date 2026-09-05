@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#080b22">
+<title>ALTak-ийн Төрсөн Өдрийн Шөнийн Парк 🌙🎮</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#080b22;color:#fff;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;touch-action:none}
+canvas{display:block;width:100vw;height:100vh;image-rendering:pixelated}
+.overlay{position:fixed;inset:0;background:rgba(5,7,25,.78);display:flex;align-items:center;justify-content:center;padding:18px;z-index:20}
+.card{width:min(92vw,570px);max-height:88vh;overflow:auto;background:linear-gradient(180deg,#171b43,#0e1230);border:3px solid #fff;border-radius:18px;padding:24px;box-shadow:0 0 0 5px #6b4bd1,0 12px 40px #000;text-align:center}
+h1{font-size:clamp(25px,7vw,40px);margin:8px 0 14px;color:#ffd6f4;text-shadow:3px 3px #7d4ad7}
+h2{color:#9ff5ff;margin:6px 0 12px}
+p{font-size:15px;line-height:1.75;margin:10px 0}
+button{font:inherit;font-weight:800;border:2px solid #fff;border-radius:12px;background:#ff7fca;color:#180f2d;padding:13px 20px;margin:7px;box-shadow:4px 4px #5b43a8}
+button:active{transform:translate(2px,2px);box-shadow:1px 1px #5b43a8}
+.hidden{display:none!important}
+#hud{position:fixed;z-index:5;top:12px;left:12px;background:#0c1030cc;border:2px solid #fff;border-radius:10px;padding:8px 11px;font-weight:700;font-size:13px;line-height:1.5}
+#controls{position:fixed;z-index:8;bottom:max(15px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);width:190px;height:160px}
+.pad{position:absolute;width:58px;height:58px;border-radius:15px;padding:0;margin:0;background:#272457dd;color:#fff;border:2px solid #fff;font-size:25px;box-shadow:3px 3px #111}
+#up{left:66px;top:0}#left{left:0;top:62px}#down{left:66px;top:62px}#right{left:132px;top:62px}
+#dialogue{position:fixed;z-index:10;left:50%;bottom:18px;transform:translateX(-50%);width:min(92vw,700px);background:#101432f5;border:3px solid #fff;border-radius:16px;padding:14px 16px;box-shadow:0 8px 30px #000}
+#dialogue .who{font-weight:900;color:#ff9fda;margin-bottom:5px}
+#dialogue .txt{font-size:15px;line-height:1.65;max-height:27vh;overflow:auto;white-space:pre-wrap}
+#dialogue button{float:right;margin:8px 0 0 8px;padding:8px 14px}
+#toast{position:fixed;z-index:9;top:82px;left:50%;transform:translateX(-50%);background:#14183bf2;border:2px solid #fff;border-radius:12px;padding:9px 13px;text-align:center;font-size:13px;max-width:88vw}
+.small{font-size:12px;color:#c7c9e9}
+.tag{display:inline-block;background:#29265c;border:1px solid #8e83d8;border-radius:999px;padding:5px 9px;margin:3px;font-size:12px}
+</style>
+</head>
+<body>
+<canvas id="game" width="1000" height="600"></canvas>
+
+<div id="hud" class="hidden">
+🌙 <span id="levelName">1-р түвшин</span><br>
+💗 <span id="count">0</span> / <span id="total">3</span>
+</div>
+
+<div id="toast" class="hidden"></div>
+
+<div id="controls" class="hidden">
+<button class="pad" id="up">▲</button>
+<button class="pad" id="left">◀</button>
+<button class="pad" id="down">▼</button>
+<button class="pad" id="right">▶</button>
+</div>
+
+<div id="dialogue" class="hidden">
+  <div class="who" id="who"></div>
+  <div class="txt" id="dialogueText"></div>
+  <button id="nextBtn">Үргэлжлүүлэх →</button>
+</div>
+
+<div id="start" class="overlay">
+  <div class="card">
+    <div class="tag">🎮 3 ТҮВШИНТ АДАЛ ЯВДАЛ</div>
+    <div class="tag">🌙 ШӨНИЙН ПАРК</div>
+    <div class="tag">💗 ALTak-д зориулсан</div>
+    <h1>ALTak-ийн<br>Төрсөн өдрийн Quest</h1>
+    <p>Чамд зориулж хэн нэгэн шөнийн паркт жижигхэн адал явдал үлдээжээ...</p>
+    <p>3 түвшнийг давж, дурсамжуудыг цуглуулж, эцсийн бэлгийг нээгээрэй. 🥹</p>
+    <button id="startBtn">▶ Адал явдлыг эхлүүлэх</button>
+    <p class="small">Утасныхаа дэлгэц дээрх сумнуудаар тоглоно.</p>
+  </div>
+</div>
+
+<div id="levelIntro" class="overlay hidden">
+  <div class="card">
+    <div id="introEmoji" style="font-size:44px">🌙</div>
+    <h2 id="introTitle"></h2>
+    <p id="introText"></p>
+    <button id="introBtn">Тоглоомоо үргэлжлүүлэх →</button>
+  </div>
+</div>
+
+<div id="final" class="overlay hidden">
+  <div class="card">
+    <div style="font-size:48px">🎆🎂💗</div>
+    <h1>Төрсөн өдрийн мэнд,<br>миний хөөрхөн залуу.</h1>
+    <p><b>Altangerel, чи энэ жижигхэн тоглоомын бүх түвшнийг давлаа.</b></p>
+    <p>Гэхдээ энэ бол зүгээр нэг тоглоом биш байсан. Чамд хэлэх гэсэн миний бүх үгсийн жижигхэн аялал байсан. 🤍</p>
+    <button onclick="location.reload()">↻ Дахин тоглох</button>
+  </div>
+</div>
+
+<script>
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+const W=1000,H=600;
+let running=false,level=0,score=0,keys={},player,items=[],dialogueQueue=[],dialogueOpen=false;
+const levelData=[
+ {name:"1-р түвшин — Анхны дурсамж",emoji:"🎠",title:"Парк дахь анхны шөнө",text:"Энэ паркийн хаа нэгтээ чиний төлөө үлдээсэн 3 дурсамж байна. Бүгдийг нь олоод дараагийн түвшинд очоорой."},
+ {name:"2-р түвшин — Зүрхний түг түг",emoji:"🎡",title:"Чамайг анх харсан өдөр",text:"Одоо чи бид хоёрын эхний уулзалтын шөнөөр аялна. Зарим дурсамж инээдтэй, зарим нь ичмээр, гэхдээ бүгд миний хувьд хөөрхөн. 🥹"},
+ {name:"3-р түвшин — Бидний дараагийн chapter",emoji:"🎆",title:"Төрсөн өдрийн бэлэг",text:"Сүүлийн түвшин. Шөнийн паркийн хамгийн гэрэлтэй хэсэг рүү очиж, бүх бяцхан бэлгүүдийг цуглуулаарай."}
+];
+
+const texts1=[
+"За баяр хүргье эхний үеээ чи давж чадлаа хэхэ😛",
+"Чамтай танилцсан маань миний хувьд амьдралын минь хамгийн том зүйлсийн нэг байсан шүү. Чи миний өдөр тутмын амьдралд бага багаар орж ирээд, өөрөө ч мэдэхгүйгээр инээлгэж, баярлуулж, хүлээдэг хүн минь болчихсон байна.",
+"Шинэ насанд чинь хүссэн бүх зүйл чинь биелж, хийхийг хүссэн бүхнээ хийж, өмнөхөөсөө ч илүү их аз жаргалтай байгаасай гэж хүсэж байна. Чамд ар араасаө үнэхээр сайхан зүйлс л тохиолдоосой.",
+"Бас энэ жилийн чинь хамгийн гоё дурсамжуудын дунд би багтсан гэдэгтээ баяртай байгаа🥹",
+"Өнөөдөр бол чиний өдөр болохоор маш их инээж, хайрлуулж, эрхлээрэй."
+];
+
+const texts2=[
+"Чамайг анх хараад, яг үнэндээ би аймар ичсэн. Би ер нь хүнээс тэгж ичдэггүй шд. Яагаад ч юм чамтай анх уулзсан тэр өдөр би бүр юу хэлэхээ мэдэхгүй, чам руу эгцэлж харж ч чадахгүй болтлоо ичээд байсан маань саяхан болсон юм шиг л санагддаг.",
+"Анх Аминаг авчирсан шалтгаан маань ч гэсэн үнэндээ өөрийгөө яг ингэж ичнэ гэдгээ мэдэж байсан болохоор л. “Амина хажууд байвал арай гайгүй байх болов уу” гэж бодоод л авчирсан юм. Тэгээд угаасаа чимээгүй байсан болохоор паркийн тоглоомон дээр оочерлож байхдаа чамтай ярих гэж өөрөө яриа өдөөд яваад л тэгсэн чи ч зүгээр л хариулаад дуусгачихна. 😭 Тэгээд бүр арга бараад Аминагаас тусламж гуйж, “надаас өөрөө гоё юм асуугаач, юм яриач” гэж шахаж эхлээд л чамтай юм ярьж эхэлсэн дээ.",
+"Тэр үед чам руу эгцэлж харах болгонд зүрх маань бүр түг түг гээд явчихдаг байсан. Аз болоход харанхуй байсан болохоор хацар маань халуу шатаж байсныг чи анзаараагүй байгаасай гэж найддаг. 😬",
+"Тэгээд хамт тоглоомон дээр суухад чи над руу хааяа хөөрхөн хараад, би чам руу хармагц буцаад аймар хурдан өөр тийшээ харчихдаг байсныг чинь хүртэл анзаарсан. Тэр жижигхэн зүйлүүд хүртэл надад ямар их хөөрхөн санагддаг байсан гээч.",
+"Амина намайг бүр хамгийн extreme тоглоомууд дээр аваачаад, тэр өдөр намайг ёстой л сэгсэрч өгсөн дөө. Би тэнд орилж байсан гэдгээ одоо бодохоороо хүртэл ичдэг. Тэгээд Аминаг хүргэж өгсний дараа Содоотой хамт бааранд сууж юм ярьж байхдаа ч би чамайг анзаараад л байсан.",
+"Чи ер нь нэг их юм ярихгүй, Содоо ч бас тэрийг анзаараад, намайг уйдаахгүй гэсэндээ өөрөө л юм яриад байж билээ. Би эхэндээ “за яах вэ, сонсоод л сууж байя” гэж бодоод чимээгүй сонсож байсан ч яриа нь эхлэхээрээ бүр дуусахгүй юм шиг санагдаж байсан.\nБи ч сүүлдээ жаахан согтоод ярианд нь бүр уусаад, нэг мэдэхэд клубт чамтай хамт бүжиглээд зогсож байсан.",
+"Тэр үед чи над руу яаж харж байсныг би яаг үнэндээ анзаарсан. Бид хоёр хоёулаа жаахан согтуу байсан болохоор би тэр харцыг чинь яаж хүлээж авах ёстойгоо сайн мэдэхгүй байсан. Шууд очоод үнсчихмээр санагдсан ч “магадгүй түүнд энэ хэтэрхий хүнд санагдах болов уу”, “би айлгачих вий дээ” гэж бас их айсан.",
+"Ялангуяа чи өмнө нь хүнтэй үерхэж үзээгүй гэж хэлж байсан болохоор бүр болгоомжилсон. Тийм болохоор тэр үед би өөрийнхөө хүссэн зүйлийг шууд хийхээсээ илүү чамайг бодоод, яаараагүй нь дээр гэж бодсон.",
+"Ер нь бодоод байхад бид хоёр анхны өдөртөө тийм ч их зүйл ярьж амжаагүй юм байна лээ. Гэхдээ тэр өдөр чамайг надад ямар их таалагдсан, ямар хүн юм бол гэж бодож эхэлсэн маань л надад хангалттай байсан.",
+"Харин хоёр дахь удаагаа уулзахад бүх зүйл арай өөр байсан. Би чамайг юу гэж мэдэрч байгаагаа өөрөө ойлгочихсон байсан болохоор илүү тодорхой санагдсан. Үнэндээ чамайг үнсчихмээр л байсан. Даанч чи өөрөө эхэлж алхам хийхгүй байсан болохоор би бүр аймар бантсан🫩",
+"Ер нь ийм зүйл дээр эхний алхмыг эрэгтэй хүн хийх нь гоё гэж би боддог . Би шууд үнсчихвэл чамд эвгүй санагдах болов уу, намайг юу гэж бодох бол гэж айгаад өөрөө ч алхам хийж чадаагүй.",
+"Гэхдээ зүгээр хамт байхад хүртэл би чамд улам л ойртоод, улам л холдож чадахгүй болж байгаа юм шиг мэдрэмж авж байсан . Чамтай хамт байхад ерөөсөө уйдахгүй. Зүгээр л ярилцаад суух хүртэл гоё. Заримдаа хоёулаа ядарч, нойр хүрээд, чи ажилтай надаас илүү их ядарсан байхад л яриа нь дуусахгүй, явахгүйгээр зүгээр л хамт байгаад байдаг нь хүртэл надад хөөрхөн санагддаг."
+];
+
+const texts3=[
+"Үнэндээ бид хоёрын уулзсан өдрүүд одоохондоо тийм ч олон биш. Гэхдээ тэр цөөхөн уулзалтуудынхаа дунд би чамд сайн болсноо ойлгосон.",
+"Би үүнийг нуухгүй. Надад өөр олон сонголт байж болох ч тэр хүмүүсийн авч чаддаг мэдрэмжийг би авч чаддаггүй. Чамтай уулзахад л ямар нэг зүйл өөр байдаг. “Би магадгүй учрах ёстой хүнээ олчихсон юм болов уу?” гэж хүртэл боддог.",
+"Чамтай хамт байхдаа би ямар нэгэн зүйлээр өөрийгөө хүчлэх шаардлагагүй байдаг. Зүгээр л өөрөөрөө байж чаддаг. Чамтай яримаар байдаг, чамайг илүү их мэдмээр байдаг. Чиний мэддэг, мэдэрдэг, боддог бүх зүйлийг бага багаар таньж мэдмээр санагддаг.",
+"Тийм болохоор цаашдаа чамтай илүү олон өдрийг хамт өнгөрөөмөөр байна. Илүү олон газар хамт явж, илүү олон зүйл хамт туршиж, бид хоёрын л мэдэх дурсамжуудыг улам их бүтээмээр байна.",
+"Чамайг зөвхөн миний мэддэг тэр нэг талаас нь биш, бүх талаас нь илүү их мэдмээр байна. Чи баярласан үедээ ямар байдаг, гунигласан үедээ ямар байдаг, ядарсан үедээ ямар байдаг, юунд хамгийн их дуртай, юунаас хамгийн их айдаг, юу чамайг хамгийн их баярлуулдаг гээд чиний тухай улам ихийг мэдмээр байна.",
+"Бид хоёрын одоогийн дурсамжууд цөөхөн байж магадгүй. Гэхдээ надад нэг бүр нь маш тод үлддэг. Анх чамайг хараад ичээд юу ч хэлж чадахгүй байсан тэр охин одоо чамтай цаашдаа илүү олон дурсамж бүтээхийг хүсээд сууж байна.",
+"Тэгээд хамгийн хөөрхөн нь гэвэл, энэ бүхнийг би чамтай анх уулзахдаа огт мэдээгүй байсан. Зүгээр л нэг өдөр чамайг хараад ингэж их догдолж, ингэж их санаж, ингэж их хамт баймаар болно гэж огт бодоогүй.",
+"Гэхдээ одоо бодоход… чамтай уулзсан тэр өдөр миний хувьд үнэхээр том үлгэрийн зохиол эхэлсэн өдөр байж. 🤍",
+"Тэгээд хамгийн сүүлд нь чамдаа төрсөн өдрийн мэнд хүргэе. 🤍",
+"Шинэ нас чинь чиний хувьд хамгийн гоё, хамгийн аз жаргалтай жилүүдийн нэг байгаасай гэж үнэхээр хүсэж байна. Хийхийг хүссэн бүх зүйл чинь бүтэж, зорьсон бүхэндээ хүрч, өөрийнхөө хүссэн амьдралаар амьдраасай. Чамайг үргэлж аз жаргалтай, тайван, инээмсэглэж яваасай гэж хүсдэг.",
+"Чи өөрөө анзаардаггүй байж магадгүй ч чи надад үнэхээр гоё мэдрэмж өгдөг хүн. Чамтай хамт байхдаа би их тайван, бас их аз жаргалтай байдаг. Тийм болохоор чамайг амьдралдаа оруулж ирсэндээ би үнэхээр баярладаг.",
+"Энэ төрсөн өдөр чинь зүгээр нэг нас нэмсэн өдөр биш, харин бид хоёрын цаашдын олон гоё дурсамжийн эхлэл байгаасай гэж хүсэж байна. Цаашдаа чамтай хамт илүү олон газар очиж, илүү олон зүйл туршиж, хамт инээж, хамт хөгжилдөж, заримдаа юу ч хийхгүй зүгээр л хамт баймаар байна.",
+"Чиний дараагийн насанд би чиний хажууд байж, чамайг баярлуулж, дэмжиж, чамтай хамт аль болох олон гоё дурсамж бүтээж чаддаг хүн баймаар байна.",
+"Бас нэг зүйлийг хэлэхэд… чамтай уулзсанаас хойш би “хүнтэй учрах гэдэг үнэхээр өөр зүйл юм байна” гэж боддог болсон. Надад олон сонголт байж болох ч сэтгэл гэдэг өөрөө сонгодог юм байна гэдгийг чамаас ойлгосон.",
+"Тийм болохоор энэ жил чамд ирэх бүх сайхан зүйлсийн дунд би ч гэсэн нэг хэсэг нь байгаасай. 🥹",
+"Төрсөн өдрийн мэнд, миний хөөрхөн залуу. 🤍\nЧамайг төрсөнд, бид хоёрын зам огтлолцсонд, бас чамтай танилцсандаа би үнэхээр баярладаг.\nШинэ насны чинь хамгийн гоё дурсамжуудын заримыг нь хамт бүтээцгээе. 🫶🏻"
+];
+
+function bindButton(id,key){
+ const b=document.getElementById(id);
+ ['touchstart','mousedown'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();keys[key]=true},{passive:false}));
+ ['touchend','touchcancel','mouseup','mouseleave'].forEach(ev=>b.addEventListener(ev,e=>{e.preventDefault();keys[key]=false},{passive:false}));
+}
+['up','down','left','right'].forEach(k=>bindButton(k,k));
+document.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+document.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+function resize(){}
+function star(x,y,r=3){ctx.fillStyle='#fff1b7';ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()}
+function drawBackground(){
+ const g=ctx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#070b2b');g.addColorStop(.55,'#10134a');g.addColorStop(1,'#21134c');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<90;i++){star((i*113)%W,(i*47)%300,(i%5==0?3:1.5))}
+ ctx.fillStyle='#fff2bd';ctx.beginPath();ctx.arc(840,78,45,0,7);ctx.fill();
+ ctx.fillStyle='#15194b';ctx.fillRect(0,350,W,250);
+ for(let y=355;y<H;y+=35)for(let xx=0;xx<W;xx+=35){ctx.strokeStyle='#25295a';ctx.strokeRect(xx,y,35,35)}
+ // lake
+ ctx.fillStyle='#172c67';ctx.fillRect(0,365,W,95);ctx.fillStyle='#29488a';ctx.fillRect(0,390,W,3);
+ // trees
+ for(let i=0;i<13;i++){let tx=(i*91+35)%W,ty=330+(i%2)*18;ctx.fillStyle='#40276b';ctx.fillRect(tx,ty,12,45);ctx.fillStyle=i%2?'#2d8b78':'#347e9e';ctx.beginPath();ctx.arc(tx+6,ty-5,32,0,7);ctx.fill();ctx.fillStyle='#7ef0d0';ctx.beginPath();ctx.arc(tx-8,ty-13,4,0,7);ctx.fill()}
+ // colorful park lights
+ for(let i=0;i<9;i++){let lx=40+i*110;ctx.fillStyle='#e8d5ff';ctx.fillRect(lx,285,4,65);ctx.fillStyle=['#ff75c8','#6ee7ff','#ffe27a','#a7ffb5'][i%4];ctx.beginPath();ctx.arc(lx+2,282,9,0,7);ctx.fill()}
+ // ferris wheel
+ ctx.strokeStyle='#dca9ff';ctx.lineWidth=5;ctx.beginPath();ctx.arc(680,250,105,0,7);ctx.stroke();
+ for(let a=0;a<Math.PI*2;a+=Math.PI/6){ctx.beginPath();ctx.moveTo(680,250);ctx.lineTo(680+105*Math.cos(a),250+105*Math.sin(a));ctx.stroke()}
+ ctx.fillStyle='#ff78ca';for(let a=0;a<Math.PI*2;a+=Math.PI/6){ctx.beginPath();ctx.arc(680+105*Math.cos(a),250+105*Math.sin(a),8,0,7);ctx.fill()}
+ // carousel
+ ctx.fillStyle='#ff8fcf';ctx.beginPath();ctx.moveTo(150,290);ctx.lineTo(250,290);ctx.lineTo(200,220);ctx.fill();ctx.fillStyle='#7de9ff';ctx.fillRect(160,290,80,55);
+}
+function drawPlayer(){
+ ctx.fillStyle='#70dfff';ctx.fillRect(player.x,player.y,30,34);
+ ctx.fillStyle='#ffd0ad';ctx.fillRect(player.x+7,player.y-11,16,14);
+ ctx.fillStyle='#513629';ctx.fillRect(player.x+5,player.y-15,20,8);
+ ctx.fillStyle='#17162b';ctx.fillRect(player.x+9,player.y+3,4,4);ctx.fillRect(player.x+19,player.y+3,4,4);
+}
+function drawItem(it){
+ ctx.save();ctx.translate(it.x,it.y);ctx.rotate(Math.sin(Date.now()/400+it.x)*.08);
+ if(it.kind==='heart'){ctx.fillStyle='#ff73c8';ctx.font='32px serif';ctx.textAlign='center';ctx.fillText('♥',0,0)}
+ if(it.kind==='star'){ctx.fillStyle='#ffe47d';ctx.font='31px serif';ctx.textAlign='center';ctx.fillText('★',0,0)}
+ if(it.kind==='gift'){ctx.fillStyle='#ff7fbf';ctx.fillRect(-14,-12,28,24);ctx.fillStyle='#ffe17a';ctx.fillRect(-3,-12,6,24);ctx.fillRect(-14,-2,28,5)}
+ ctx.restore();
+}
+function showToast(t){const el=document.getElementById('toast');el.textContent=t;el.classList.remove('hidden');clearTimeout(window.toastT);window.toastT=setTimeout(()=>el.classList.add('hidden'),1900)}
+function openDialogue(who,text,next){
+ dialogueOpen=true;document.getElementById('who').textContent=who;document.getElementById('dialogueText').textContent=text;document.getElementById('dialogue').classList.remove('hidden');
+ document.getElementById('nextBtn').onclick=()=>{dialogueOpen=false;document.getElementById('dialogue').classList.add('hidden');if(next)next()};
+}
+function startDialogue(arr,after){
+ let i=0;
+ function go(){if(i>=arr.length){after&&after();return}openDialogue('💌 Чиний бяцхан дурсамж',arr[i++],go)}
+ go();
+}
+function showIntro(n){
+ const d=levelData[n-1];document.getElementById('introEmoji').textContent=d.emoji;document.getElementById('introTitle').textContent=d.title;document.getElementById('introText').textContent=d.text;document.getElementById('levelIntro').classList.remove('hidden');
+ document.getElementById('introBtn').onclick=()=>{document.getElementById('levelIntro').classList.add('hidden');setupLevel(n)};
+}
+function setupLevel(n){
+ level=n;score=0;document.getElementById('levelName').textContent=levelData[n-1].name;document.getElementById('count').textContent=0;
+ const totals=[3,4,5];document.getElementById('total').textContent=totals[n-1];
+ player={x:70,y:420};items=[];
+ const positions=n===1?[[210,250],[450,170],[820,410]]:n===2?[[180,160],[390,390],[650,170],[850,390]]:[[160,200],[340,420],[560,170],[750,400],[880,190]];
+ positions.forEach((q,i)=>items.push({x:q[0],y:q[1],got:false,kind:n===3?'gift':(n===2?'heart':'star')}));
+ running=true;requestAnimationFrame(loop);
+}
+function finishLevel(){
+ running=false;
+ const arr=level===1?texts1:level===2?texts2:texts3;
+ startDialogue(arr,()=>{
+   if(level<3)showIntro(level+1);else document.getElementById('final').classList.remove('hidden');
+ });
+}
+function loop(){
+ if(!running)return;
+ drawBackground();
+ let dx=0,dy=0;
+ if(keys.left||keys.a||keys['arrowleft'])dx--;if(keys.right||keys.d||keys['arrowright'])dx++;
+ if(keys.up||keys.w||keys['arrowup'])dy--;if(keys.down||keys.s||keys['arrowdown'])dy++;
+ if(dx&&dy){dx*=.707;dy*=.707}
+ player.x=Math.max(10,Math.min(W-42,player.x+dx*3.5));player.y=Math.max(105,Math.min(H-50,player.y+dy*3.5));
+ items.forEach(it=>{if(!it.got){drawItem(it);if(Math.hypot(player.x+15-it.x,player.y+15-it.y)<35){it.got=true;score++;document.getElementById('count').textContent=score;showToast(level===1?'✨ Дурсамж оллоо!':level===2?'💗 Зүрх оллоо!':'🎁 Бэлэг оллоо!');if(score===items.length)setTimeout(finishLevel,500)}}});
+ drawPlayer();requestAnimationFrame(loop);
+}
+document.getElementById('startBtn').onclick=()=>{document.getElementById('start').classList.add('hidden');document.getElementById('hud').classList.remove('hidden');document.getElementById('controls').classList.remove('hidden');showIntro(1)};
+</script>
+</body>
+</html>
